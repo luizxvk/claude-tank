@@ -1,5 +1,5 @@
 {
-  "name": "clawd-monitor",
+  "name": "claude-tank",
   "productName": "Tanque do Claude",
   "version": "1.0.0",
   "description": "Monitor do contexto e dos limites do Claude Code, com o Clawd no tanque.",

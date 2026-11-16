@@ -1,4 +1,4 @@
-# Tanque do Claude (clawd-monitor)
+# Tanque do Claude (claude-tank)
 
 Monitor do contexto e dos limites de uso do Claude Code no Windows. O Clawd boia num tanque que enche conforme o contexto do chat cresce: feliz com pouco contexto, de cara fechada no meio e sufocado perto do limite.
 
@@ -23,13 +23,13 @@ Monitor do contexto e dos limites de uso do Claude Code no Windows. O Clawd boia
 
 Precisa do **Node.js** no PATH, porque os hooks do Claude Code rodam com `node`.
 
-1. Baixe o `TanqueDoClaude-x.y.z.exe` em [Releases](https://github.com/luizxvk/clawd-monitor/releases) e abra.
+1. Baixe o `TanqueDoClaude-x.y.z.exe` em [Releases](https://github.com/luizxvk/claude-tank/releases) e abra.
 2. No primeiro uso, o app copia os hooks pra `~/.claude/hooks` e registra `Stop`, `PostToolUse` e `UserPromptSubmit` no `~/.claude/settings.json`, sem duplicar se já existirem.
 
 ### Pelo código
 
 ```sh
-git clone https://github.com/luizxvk/clawd-monitor.git %USERPROFILE%\.claude\hooks
+git clone https://github.com/luizxvk/claude-tank.git %USERPROFILE%\.claude\hooks
 cd %USERPROFILE%\.claude\hooks
 npm install
 npm start
@@ -60,6 +60,25 @@ Variáveis de ambiente opcionais:
 - O **contexto** vem do `usage` da última resposta no transcript da sessão (`~/.claude/projects/**.jsonl`).
 - Os **limites** vêm do mesmo endpoint que o `/usage` usa, lido com o token que o Claude Code guarda no seu PC. Nada sai da sua máquina além dessa consulta.
 - O **aviso de renovação** é uma tarefa agendada do Windows chamada `Claude limite renovou - <sessao|semana>`.
+
+## Como o release é feito
+
+O `.exe` da página de [Releases](https://github.com/luizxvk/claude-tank/releases) é um app portátil (não precisa instalar) gerado assim:
+
+1. Suba a `version` no `package.json` (ex.: `1.0.0` → `1.0.1`).
+2. `npm install` (só na primeira vez) e `npm run dist`. O `electron-builder` empacota o app Electron e os hooks e grava `dist/TanqueDoClaude-<versão>.exe`.
+3. Commit e push das mudanças:
+   ```sh
+   git add -A && git commit -m "Tanque do Claude <versão>" && git push
+   ```
+4. Publique o release com o `.exe` anexado (precisa do [GitHub CLI](https://cli.github.com)):
+   ```sh
+   gh release create v<versão> dist/TanqueDoClaude-<versão>.exe --title "Tanque do Claude <versão>" --notes "O que mudou"
+   ```
+
+A pasta `dist/` não vai pro git; o `.exe` só existe como anexo do release.
+
+**O que o `.exe` faz no primeiro uso:** copia `context-alert.js`, `clawd.js`, `renovou.js`, `renovou.ps1`, `toast.ps1` e `context-monitor.html` pra `~/.claude/hooks` e registra os três hooks no `~/.claude/settings.json`. Depois disso, os avisos funcionam mesmo com o app fechado.
 
 ## Desenvolvimento
 
