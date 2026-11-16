@@ -23,21 +23,34 @@ const PROMPT = [
 ].join(' ');
 
 function claudeExe() {
-  // a extensao do VS Code traz o CLI mais novo; senao, o instalado em ~/.local/bin
-  const ext = path.join(os.homedir(), '.vscode', 'extensions');
+  const home = os.homedir();
+  const achados = [];
+  // 1) CLI no PATH (instalador nativo ou npm: claude.exe / claude.cmd)
   try {
-    const pastas = fs.readdirSync(ext).filter(d => d.startsWith('anthropic.claude-code-')).sort().reverse();
-    for (const d of pastas) {
-      const exe = path.join(ext, d, 'resources', 'native-binary', 'claude.exe');
-      if (fs.existsSync(exe)) return exe;
-    }
+    for (const l of execSync('where claude', { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }).split(/\r?\n/))
+      if (l.trim()) achados.push(l.trim());
   } catch {}
-  return path.join(os.homedir(), '.local', 'bin', 'claude.exe');
+  // 2) lugares padrao do CLI
+  achados.push(path.join(home, '.local', 'bin', 'claude.exe'));
+  if (process.env.APPDATA) achados.push(path.join(process.env.APPDATA, 'npm', 'claude.cmd'));
+  // 3) extensao do Claude Code em VS Code, Cursor ou Windsurf (traz o CLI mais novo)
+  for (const ide of ['.vscode', '.vscode-insiders', '.cursor', '.windsurf']) {
+    try {
+      const ext = path.join(home, ide, 'extensions');
+      for (const d of fs.readdirSync(ext).filter(d => d.startsWith('anthropic.claude-code-')).sort().reverse())
+        achados.push(path.join(ext, d, 'resources', 'native-binary', 'claude.exe'));
+    } catch {}
+  }
+  return achados.find(f => fs.existsSync(f)) || null;
 }
 
-function vscodeAberto() {
-  try { return /Code\.exe/i.test(execSync('tasklist /FI "IMAGENAME eq Code.exe" /NH', { encoding: 'utf8', windowsHide: true })); }
-  catch { return false; }
+// retoma so se algum lugar onde o Claude Code roda esta aberto (IDE, app ou terminal com claude)
+const PROCESSOS = ['Code.exe', 'Code - Insiders.exe', 'Cursor.exe', 'Windsurf.exe', 'Claude.exe', 'claude.exe'];
+function claudeAberto() {
+  try {
+    const lista = execSync('tasklist /NH', { encoding: 'utf8', windowsHide: true });
+    return PROCESSOS.some(p => lista.toLowerCase().includes(p.toLowerCase()));
+  } catch { return false; }
 }
 
 function main() {
@@ -50,8 +63,8 @@ function main() {
     toast(`Claude: limite da ${NOMES[k] || k} renovou`, 'Pode voltar a usar à vontade.');
     return;
   }
-  if (!vscodeAberto()) {
-    toast('Claude: limite da sessão renovou', `VS Code fechado, então não retomei "${alvo.assunto}".`);
+  if (!claudeAberto()) {
+    toast('Claude: limite da sessão renovou', `Nenhum Claude Code aberto (IDE, app ou terminal), então não retomei "${alvo.assunto}".`);
     return;
   }
   let parado = true;
@@ -62,13 +75,14 @@ function main() {
   }
 
   const exe = claudeExe();
+  if (!exe) { toast('Claude: limite renovou', `Não achei o CLI do Claude Code, então não retomei "${alvo.assunto}".`); return; }
   const args = ['--resume', alvo.sessionId, '-p', PROMPT, '--permission-mode', 'auto'];
   if (seco) { console.log('retomaria:', exe, args.slice(0, 2).join(' '), 'em', alvo.cwd, '-', alvo.assunto); return; }
 
   toast('Claude: limite renovou, retomando o chat', `"${alvo.assunto}" continua de onde parou.`);
   fs.mkdirSync(LOGS, { recursive: true });
   const log = fs.openSync(path.join(LOGS, `retomada-${new Date().toISOString().slice(0, 16).replace(/:/g, '')}.log`), 'a');
-  const p = spawn(exe, args, { cwd: alvo.cwd, stdio: ['ignore', log, log], windowsHide: true });
+  const p = spawn(exe, args, { cwd: alvo.cwd, stdio: ['ignore', log, log], windowsHide: true, shell: /\.cmd$/i.test(exe) });
   p.on('exit', codigo => {
     toast('Claude: retomada terminou', codigo === 0
       ? `"${alvo.assunto}". Reabra o chat pelo histórico pra ver o que ele fez.`

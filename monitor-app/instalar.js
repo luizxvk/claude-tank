@@ -9,7 +9,7 @@ const ARQUIVOS = ['context-alert.js', 'clawd.js', 'toast.ps1', 'renovou.js', 're
 const EVENTOS = ['Stop', 'PostToolUse', 'UserPromptSubmit'];
 
 function instalar(origem) {
-  const claude = path.join(os.homedir(), '.claude');
+  const claude = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
   const destino = path.join(claude, 'hooks');
   fs.mkdirSync(destino, { recursive: true });
   for (const f of ARQUIVOS) fs.writeFileSync(path.join(destino, f), fs.readFileSync(path.join(origem, f)));

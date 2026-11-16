@@ -342,6 +342,7 @@
     if (!s) { $('pills').innerHTML = ''; return; }
     const pill = (txt, on, extra = '') => `<span class="pill ${on ? 'on' : ''} ${extra}">${esc(txt)}</span>`;
     $('pills').innerHTML = [
+      ...(s.origem ? [pill(s.origem, true)] : []),
       pill(s.obsidian ? 'Obsidian em uso' : 'Obsidian parado', s.obsidian),
       pill(s.graphify ? (s.graphifyUsado ? 'Graphify em uso' : 'Graphify ativo') : 'Sem Graphify', s.graphify),
       ...s.skills.map(k => pill(k.replace(/^[\w-]+:/, ''), true, 'skill')),

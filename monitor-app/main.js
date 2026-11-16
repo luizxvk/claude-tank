@@ -5,21 +5,32 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { app, BrowserWindow, ipcMain, nativeImage } = require('electron');
-const { usoDoTranscript, usoDaConta, lerConfig, salvarConfig, agendarRenovacao, LIMITES, LIMITE_USO } = require('../context-alert.js');
+const { CLAUDE_DIR, usoDoTranscript, usoDaConta, lerConfig, salvarConfig, agendarRenovacao, LIMITES, LIMITE_USO } = require('../context-alert.js');
 const Clawd = require('../clawd.js');
 
-const PROJETOS = path.join(os.homedir(), '.claude', 'projects');
+const PROJETOS = path.join(CLAUDE_DIR, 'projects');
 const RECENTE_MS = 6 * 60 * 60 * 1000;
+
+// onde o chat roda: o campo entrypoint do transcript diz se foi CLI, app ou IDE
+function nomeDaOrigem(e) {
+  if (!e) return '';
+  if (e === 'cli' || e === 'sdk-cli') return 'Terminal';
+  if (e === 'claude-vscode') return 'VS Code';
+  if (e === 'claude-desktop') return 'App';
+  if (/jetbrains/i.test(e)) return 'JetBrains';
+  return e.replace(/^claude-/, '');
+}
 
 // assunto + total de tokens do chat: le o arquivo inteiro, entao guarda por mtime
 const cacheResumo = new Map();
 function resumoDoChat(arq, mtime) {
   const c = cacheResumo.get(arq);
   if (c && c.mtime === mtime) return c;
-  let titulo = '', tituloIa = '', primeira = '', total = 0, cwd = '';
+  let origem = '', titulo = '', tituloIa = '', primeira = '', total = 0, cwd = '';
   const vistos = new Set(), skills = new Set();
   let obsidian = false, graphifyUsado = false;
   for (const l of fs.readFileSync(arq, 'utf8').split('\n')) {
+    if (!origem) { const e = l.match(/"entrypoint":"([^"]+)"/); if (e) origem = e[1]; }
     if (!cwd && l.includes('"cwd"')) { try { cwd = JSON.parse(l).cwd || ''; } catch {} }
     if (l.includes('"custom-title"')) { try { titulo = JSON.parse(l).customTitle || titulo; } catch {} continue; }
     if (l.includes('"ai-title"')) { try { tituloIa = JSON.parse(l).aiTitle || tituloIa; } catch {} continue; }
@@ -53,7 +64,7 @@ function resumoDoChat(arq, mtime) {
     } catch {}
   }
   const graphify = !!cwd && fs.existsSync(path.join(cwd, 'graphify-out', 'graph.json'));
-  const r = { mtime, assunto: titulo || tituloIa || primeira || 'Chat sem título', total, cwd,
+  const r = { mtime, assunto: titulo || tituloIa || primeira || 'Chat sem título', total, cwd, origem: nomeDaOrigem(origem),
     skills: [...skills], obsidian, graphify, graphifyUsado };
   cacheResumo.set(arq, r);
   return r;

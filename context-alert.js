@@ -14,6 +14,8 @@ const { spawn, spawnSync } = require('child_process');
 
 const LIMITES = (process.env.CLAUDE_CTX_ALERTS || '65,80').split(',').map(Number).filter(Boolean);
 const JANELA_FIXA = Number(process.env.CLAUDE_CTX_WINDOW) || 0; // 0 = automatico
+// pasta de dados do Claude Code: a mesma pro CLI, app desktop e extensoes de IDE
+const CLAUDE_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 const ESTADO_DIR = path.join(os.tmpdir(), 'claude-context-alert');
 // os hooks moram em ~/.claude/hooks; dentro do .exe (app.asar) aponta pra la' tambem
 const BASE = __dirname.includes('app.asar') ? path.join(os.homedir(), '.claude', 'hooks') : __dirname;
@@ -67,7 +69,7 @@ async function usoDaConta(maxIdadeMs = 60000) {
   } catch {}
   let j;
   try {
-    const cred = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', '.credentials.json'), 'utf8'));
+    const cred = JSON.parse(fs.readFileSync(path.join(CLAUDE_DIR, '.credentials.json'), 'utf8'));
     const r = await fetch('https://api.anthropic.com/api/oauth/usage', {
       headers: { Authorization: 'Bearer ' + cred.claudeAiOauth.accessToken, 'anthropic-beta': 'oauth-2025-04-20' },
       signal: AbortSignal.timeout(5000),
@@ -215,7 +217,7 @@ function main(entrada) {
   return saida;
 }
 
-module.exports = { usoDoTranscript, usoDaConta, avisarLimites, agendarRenovacao, toast, lerConfig, salvarConfig, LIMITES, LIMITE_USO };
+module.exports = { CLAUDE_DIR, usoDoTranscript, usoDaConta, avisarLimites, agendarRenovacao, toast, lerConfig, salvarConfig, LIMITES, LIMITE_USO };
 
 let entrada = '';
 if (require.main !== module) {

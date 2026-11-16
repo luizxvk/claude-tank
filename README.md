@@ -1,11 +1,12 @@
 # Tanque do Claude (claude-tank)
 
-Monitor do contexto e dos limites de uso do Claude Code no Windows. O Clawd boia num tanque que enche conforme o contexto do chat cresce: feliz com pouco contexto, de cara fechada no meio e sufocado perto do limite.
+Monitor do contexto e dos limites de uso do Claude Code no Windows. Funciona com o Claude Code em qualquer lugar: terminal (CLI), app desktop e extensões de IDE (VS Code, Cursor, Windsurf), porque todos gravam na mesma pasta `~/.claude`. O Clawd boia num tanque que enche conforme o contexto do chat cresce: feliz com pouco contexto, de cara fechada no meio e sufocado perto do limite.
 
 ![Clawd no tanque](monitor-app/clawd.png)
 
 ## O que faz
 
+- **Origem do chat:** uma pill mostra se o chat roda no Terminal, no App ou no VS Code.
 - **Contexto do chat atual** em %, com tokens no contexto e o total gasto no chat.
 - **Limites da conta:** sessão de 5 horas e semana, com o horário em que cada um renova.
 - **Ritmo da sessão:** leve, moderado ou avançado. No avançado o limite acaba antes de renovar, e o Clawd sua.
@@ -16,7 +17,7 @@ Monitor do contexto e dos limites de uso do Claude Code no Windows. O Clawd boia
   - sessão ou semana em 75%;
   - limite renovado.
 - **Aviso pro Claude aos 65%:** o hook manda ele parar, escrever um handoff das pendências e pedir um chat novo.
-- **Retomar o chat atual quando o limite renovar** (opcional, desligado por padrão): 1 minuto depois do reset, roda `claude --resume <chat> -p ...` em modo `auto`. Só retoma com o VS Code aberto e o chat parado há 3 minutos, e grava log em `~/.claude/hooks/logs`.
+- **Retomar o chat atual quando o limite renovar** (opcional, desligado por padrão): 1 minuto depois do reset, roda `claude --resume <chat> -p ...` em modo `auto`. Acha o `claude` no PATH, no npm ou na extensão da IDE. Só retoma com algum Claude Code aberto (IDE, app ou terminal) e o chat parado há 3 minutos, e grava log em `~/.claude/hooks/logs`.
 - **Ícone animado** na barra de tarefas, com o mesmo humor do Clawd.
 
 ## Instalar
@@ -53,6 +54,7 @@ Variáveis de ambiente opcionais:
 | - | - | - |
 | `CLAUDE_CTX_ALERTS` | `65,80` | Limites de contexto que disparam aviso. |
 | `CLAUDE_USAGE_ALERT` | `75` | % da sessão ou da semana que dispara aviso. |
+| `CLAUDE_CONFIG_DIR` | `~/.claude` | Pasta de dados do Claude Code, se você usa outra. |
 | `CLAUDE_CTX_WINDOW` | automático | Força o tamanho da janela de contexto. Opus 5.x e Fable usam 1M; os outros, 200k. |
 
 ## Como funciona
